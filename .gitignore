@@ -1,0 +1,82 @@
+# =========================
+# Python / Virtual Environment
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints
+
+# =========================
+# IDEs / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# =========================
+# Project Specific (Data & Models)
+# LƯU Ý: Git không thể đẩy (push) các file > 100MB, và không nên push model/data
+# =========================
+
+# Không push dữ liệu raw và processed
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Không push mô hình (weights rất nặng)
+models/baseline/*
+models/phobert/*
+!models/baseline/.gitkeep
+!models/phobert/.gitkeep
+
+# Không push kết quả dự đoán rác, log (có thể giữ lại các file tổng hợp nhỏ nếu muốn)
+results/*
+!results/experiments_log.csv
+!results/.gitkeep
+
+# Không push các file rác khi build LaTeX (nếu viết paper LaTeX)
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz
+report/*.bbl
+report/*.blg
+
+# Bỏ qua folder figures nếu nó sinh ra quá nhiều ảnh rác, hoặc để lại nếu muốn lưu (hiện đang không ignore figures)
