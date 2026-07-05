@@ -1,2 +1,2 @@
-﻿total_samples,main_samples,uit_vsfc_samples,negative_percent,neutral_percent,positive_percent,avg_word_count,p95_word_count,duplicate_text_count,duplicate_full_count,suggested_max_length
-17175,1000,16175,43.72,6.28,50.0,14.43,34.0,252,248,34
+﻿total_samples,main_samples,uit_vsfc_samples,negative_percent,neutral_percent,positive_percent,avg_word_count,p95_word_count,duplicate_text_count,duplicate_full_count,suggested_max_length,risk_comment
+17175,1000,16175,43.72,6.28,50.0,14.43,34.0,252,248,34,"Dữ liệu bị mất cân bằng nhãn, trong đó nhãn Bình thường chỉ chiếm 6.28%. Khi huấn luyện mô hình cần cân nhắc sử dụng class-weight hoặc Focal Loss để tránh mô hình học lệch về hai nhãn Tích cực và Tiêu cực."
