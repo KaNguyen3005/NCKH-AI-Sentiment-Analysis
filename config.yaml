@@ -62,3 +62,23 @@ notes:
     tokenizer, chọn model.max_length = 64.
   task_06_07: Gộp khảo sát chính và UIT-VSFC về cùng format 3 nhãn, tạo merged.csv
     và chốt max_length vào config.yaml.
+baseline:
+  nb_tfidf:
+    model_path: models/baseline/nb_tfidf.pkl
+    versioned_model_path: models/baseline/nb_tfidf_0708_v1.pkl
+    vectorizer:
+      type: TfidfVectorizer
+      max_features: 20000
+      ngram_range:
+      - 1
+      - 2
+    classifier:
+      type: MultinomialNB
+      alpha: 1.0
+    validation:
+      accuracy: 0.8748
+      f1_macro: 0.6529
+      f1_negative: 0.8943
+      f1_neutral: 0.1635
+      f1_positive: 0.9009
+    test_used: false

@@ -1,0 +1,2 @@
+﻿date,model,config,train_size,val_acc,val_f1_macro,val_f1_negative,val_f1_neutral,val_f1_positive,train_time_min,notes
+2026-07-09,NB_TFIDF,"TfidfVectorizer(max_features=20000, ngram_range=(1,2)) + MultinomialNB(alpha=1.0)",11846,0.8748,0.6529,0.8943,0.1635,0.9009,0.5388,B1 baseline; train on train.csv; validate on val.csv; test.csv locked and not used
