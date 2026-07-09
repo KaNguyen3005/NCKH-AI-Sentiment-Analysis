@@ -35,6 +35,10 @@ data:
   avg_word_count: 14.41
   p95_word_count: 34.0
   max_length_words_p95: 34
+  train_path: data/processed/train.csv
+  val_path: data/processed/val.csv
+  test_path: data/processed/test.csv
+  seeds_path: data/processed/seeds.json
 model:
   phobert_name: vinai/phobert-base
   mbert_name: bert-base-multilingual-cased
@@ -50,6 +54,9 @@ training:
   - 2026
   use_class_weight: true
   use_focal_loss: true
+  primary_seed: 42
+  stratify_by: label_id
+  test_set_locked: true
 notes:
   max_length_explanation: Percentile 95 theo số từ là 34. Vì PhoBERT/mBERT dùng subword
     tokenizer, chọn model.max_length = 64.
