@@ -1,0 +1,67 @@
+{
+  "total_samples": 16924,
+  "primary_seed": 42,
+  "train": {
+    "name": "train",
+    "size": 11846,
+    "percent_of_total": 70.0,
+    "label_count": {
+      "Tích cực": 5926,
+      "Tiêu cực": 5235,
+      "Bình thường": 685
+    },
+    "label_percent": {
+      "Tích cực": 50.03,
+      "Tiêu cực": 44.19,
+      "Bình thường": 5.78
+    },
+    "source_count": {
+      "UIT-VSFC": 11313,
+      "Khao_sat_AI": 533
+    }
+  },
+  "validation": {
+    "name": "validation",
+    "size": 2539,
+    "percent_of_total": 15.0,
+    "label_count": {
+      "Tích cực": 1271,
+      "Tiêu cực": 1122,
+      "Bình thường": 146
+    },
+    "label_percent": {
+      "Tích cực": 50.06,
+      "Tiêu cực": 44.19,
+      "Bình thường": 5.75
+    },
+    "source_count": {
+      "UIT-VSFC": 2432,
+      "Khao_sat_AI": 107
+    }
+  },
+  "test": {
+    "name": "test",
+    "size": 2539,
+    "percent_of_total": 15.0,
+    "label_count": {
+      "Tích cực": 1270,
+      "Tiêu cực": 1122,
+      "Bình thường": 147
+    },
+    "label_percent": {
+      "Tích cực": 50.02,
+      "Tiêu cực": 44.19,
+      "Bình thường": 5.79
+    },
+    "source_count": {
+      "UIT-VSFC": 2430,
+      "Khao_sat_AI": 109
+    }
+  },
+  "output_files": {
+    "train": "D:\\NCKH\\NCKH-AI-Sentiment-Analysis\\data\\processed\\train.csv",
+    "validation": "D:\\NCKH\\NCKH-AI-Sentiment-Analysis\\data\\processed\\val.csv",
+    "test": "D:\\NCKH\\NCKH-AI-Sentiment-Analysis\\data\\processed\\test.csv",
+    "seeds": "D:\\NCKH\\NCKH-AI-Sentiment-Analysis\\data\\processed\\seeds.json"
+  }
+}

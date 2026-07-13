@@ -1,0 +1,84 @@
+project:
+  name: Vietnamese AI Sentiment Analysis
+  task: 3-class sentiment classification
+  language: vi
+data:
+  raw_main_path: data/raw/khao_sat_AI_NLP_1000.csv
+  raw_uit_vsfc_path: data/raw/uit-vsfc/uit_vsfc_all.csv
+  processed_path: data/processed/merged.csv
+  text_column: text_clean
+  plm_text_column: text_plm
+  label_column: label
+  label_id_column: label_id
+  num_labels: 3
+  id_to_label:
+    0: Tiêu cực
+    1: Bình thường
+    2: Tích cực
+  label_to_id:
+    Tiêu cực: 0
+    Bình thường: 1
+    Tích cực: 2
+  total_samples: 16924
+  main_samples: 749
+  uit_vsfc_samples: 16175
+  label_count:
+    Tích cực: 8467
+    Tiêu cực: 7479
+    Bình thường: 978
+  label_distribution_percent:
+    Tích cực: 50.03
+    Tiêu cực: 44.19
+    Bình thường: 5.78
+  removed_invalid_or_empty: 0
+  removed_duplicates: 251
+  avg_word_count: 14.41
+  p95_word_count: 34.0
+  max_length_words_p95: 34
+  train_path: data/processed/train.csv
+  val_path: data/processed/val.csv
+  test_path: data/processed/test.csv
+  seeds_path: data/processed/seeds.json
+model:
+  phobert_name: vinai/phobert-base
+  mbert_name: bert-base-multilingual-cased
+  max_length: 64
+training:
+  split_ratio:
+    train: 0.7
+    validation: 0.15
+    test: 0.15
+  random_seeds:
+  - 42
+  - 2024
+  - 2026
+  use_class_weight: true
+  use_focal_loss: true
+  primary_seed: 42
+  stratify_by: label_id
+  test_set_locked: true
+notes:
+  max_length_explanation: Percentile 95 theo số từ là 34. Vì PhoBERT/mBERT dùng subword
+    tokenizer, chọn model.max_length = 64.
+  task_06_07: Gộp khảo sát chính và UIT-VSFC về cùng format 3 nhãn, tạo merged.csv
+    và chốt max_length vào config.yaml.
+baseline:
+  nb_tfidf:
+    model_path: models/baseline/nb_tfidf.pkl
+    versioned_model_path: models/baseline/nb_tfidf_0708_v1.pkl
+    vectorizer:
+      type: TfidfVectorizer
+      max_features: 20000
+      ngram_range:
+      - 1
+      - 2
+    classifier:
+      type: MultinomialNB
+      alpha: 1.0
+    validation:
+      accuracy: 0.8748
+      f1_macro: 0.6529
+      f1_negative: 0.8943
+      f1_neutral: 0.1635
+      f1_positive: 0.9009
+    test_used: false
