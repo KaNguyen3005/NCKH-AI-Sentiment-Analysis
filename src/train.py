@@ -3,8 +3,11 @@ import argparse
 import yaml
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.optim import AdamW
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_linear_schedule_with_warmup
+import numpy as np
+from sklearn.utils.class_weight import compute_class_weight
 import pandas as pd
 from tqdm import tqdm
 import time
@@ -25,6 +28,30 @@ except ImportError:
     pass
 
 from dataset import create_data_loader
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+from models.custom_phobert import CustomPhoBERTClassifier
+
+class FocalLoss(nn.Module):
+    def __init__(self, weight=None, gamma=2.0, reduction='mean'):
+        super(FocalLoss, self).__init__()
+        self.weight = weight # class weights if any
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        ce_loss = F.cross_entropy(inputs, targets, weight=self.weight, reduction='none')
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+        
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            return focal_loss
+
 
 def train_epoch(model, data_loader, loss_fn, optimizer, device, scheduler):
     """
@@ -122,6 +149,8 @@ def log_experiment(log_path, model_name, config_str, train_size, val_acc, val_f1
 def main():
     parser = argparse.ArgumentParser(description="Train Sentiment Analysis Model")
     parser.add_argument("--config", type=str, default="../config.yaml", help="Path to config file")
+    parser.add_argument("--loss_type", type=str, default="ce", choices=["ce", "class_weight", "focal"], help="Loss function type")
+    parser.add_argument("--head_type", type=str, default="cls", choices=["cls", "mean_pooling"], help="Classification head type")
     args = parser.parse_args()
 
     # Cấu hình mặc định
@@ -183,16 +212,42 @@ def main():
     train_loader = create_data_loader(df_train, tokenizer, config["max_length"], config["batch_size"])
     val_loader = create_data_loader(df_val, tokenizer, config["max_length"], config["batch_size"], shuffle=False)
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        config["model_name"], 
-        num_labels=config["num_classes"]
+    model = CustomPhoBERTClassifier(
+        model_name=config["model_name"], 
+        num_classes=config["num_classes"],
+        head_type=args.head_type
     ).to(device)
 
     optimizer = AdamW(model.parameters(), lr=float(config["learning_rate"]), weight_decay=float(config["weight_decay"]))
     total_steps = len(train_loader) * config["epochs"]
     warmup_steps = int(total_steps * float(config["warmup_ratio"]))
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps)
-    loss_fn = nn.CrossEntropyLoss().to(device)
+    
+    # Tính Class Weights nếu cần
+    class_weights_tensor = None
+    if args.loss_type in ["class_weight", "focal"]:
+        print("Computing class weights...")
+        labels_np = df_train[config.get("label_column", "label_id") if "label_column" in config else "label_id"].to_numpy()
+        # Fallback to 'label' column if 'label_id' not found
+        if "label_id" not in df_train.columns and "label" in df_train.columns:
+            labels_np = df_train["label"].to_numpy()
+            
+        classes = np.unique(labels_np)
+        cw = compute_class_weight('balanced', classes=classes, y=labels_np)
+        class_weights_tensor = torch.tensor(cw, dtype=torch.float).to(device)
+        print(f"Class Weights: {cw}")
+
+    # Khởi tạo Loss Function
+    if args.loss_type == "class_weight":
+        print("Using CrossEntropyLoss with Class Weights")
+        loss_fn = nn.CrossEntropyLoss(weight=class_weights_tensor).to(device)
+    elif args.loss_type == "focal":
+        print("Using Focal Loss (gamma=2.0) with Class Weights")
+        loss_fn = FocalLoss(weight=class_weights_tensor, gamma=2.0).to(device)
+    else:
+        print("Using Standard CrossEntropyLoss")
+        loss_fn = nn.CrossEntropyLoss().to(device)
+
 
     best_val_loss = float('inf')
     best_val_metrics = None
@@ -219,8 +274,9 @@ def main():
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_val_metrics = (val_acc, val_f1_macro, f1_all)
-            torch.save(model.state_dict(), os.path.join(config["save_dir"], "best_model.pt"))
-            print("=> Saved new best model checkpoint!")
+            model_save_path = os.path.join(config["save_dir"], f"best_model_{args.loss_type}_{args.head_type}.pt")
+            torch.save(model.state_dict(), model_save_path)
+            print(f"=> Saved new best model checkpoint to {model_save_path}!")
 
     train_time_min = (time.time() - start_time) / 60.0
 
@@ -242,7 +298,7 @@ def main():
     if best_val_metrics:
         val_acc, val_f1_macro, f1_all = best_val_metrics
         log_experiment(log_path, config["model_name"], config_str, len(df_train), 
-                       val_acc, val_f1_macro, f1_all, train_time_min, notes="Baseline run")
+                       val_acc, val_f1_macro, f1_all, train_time_min, notes=f"loss_type={args.loss_type}, head_type={args.head_type}")
         print(f"Logged experiment metrics to {log_path}")
 
 if __name__ == "__main__":

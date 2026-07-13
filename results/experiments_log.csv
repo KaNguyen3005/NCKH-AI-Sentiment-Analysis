@@ -3,3 +3,7 @@ date,model,config,train_size,val_acc,val_f1_macro,val_f1_negative,val_f1_neutral
 2026-07-09,NB_TFIDF,"TfidfVectorizer(max_features=20000, ngram_range=(1,2)) + MultinomialNB(alpha=1.0)",11846,0.8748,0.6529,0.8943,0.1635,0.9009,0.5388,B1 baseline; train on train.csv; validate on val.csv; test.csv locked and not used
 
 2026-07-13,vinai/phobert-base,"lr=2e-05, batch=32, max_len=64",11846,0.9240,0.8164,0.9413,0.5645,0.9435,18.1,Baseline run
+2026-07-13,vinai/phobert-base,"lr=2e-05, batch=32, max_len=64",11846,0.9189,0.7899,0.9440,0.4895,0.9362,18.1,loss_type=ce
+2026-07-13,vinai/phobert-base,"lr=2e-05, batch=32, max_len=64",11846,0.9011,0.8079,0.9335,0.5676,0.9227,18.2,loss_type=class_weight
+2026-07-13,vinai/phobert-base,"lr=2e-05, batch=32, max_len=64",11846,0.9063,0.8169,0.9423,0.5805,0.9280,18.2,loss_type=focal
+2026-07-13,vinai/phobert-base,"lr=2e-05, batch=32, max_len=64",11846,0.9007,0.8064,0.9400,0.5550,0.9242,18.2,"loss_type=focal, head_type=cls"
