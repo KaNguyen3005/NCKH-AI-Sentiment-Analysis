@@ -41,7 +41,7 @@ class SentimentDataset(Dataset):
             'labels': torch.tensor(label, dtype=torch.long)
         }
 
-def create_data_loader(df, tokenizer, max_length, batch_size, text_col='text', label_col='label', shuffle=True):
+def create_data_loader(df, tokenizer, max_length, batch_size, text_col='text_plm', label_col='label_id', shuffle=True):
     """
     Hàm tiện ích giúp dễ dàng tạo DataLoader từ Pandas DataFrame.
     """

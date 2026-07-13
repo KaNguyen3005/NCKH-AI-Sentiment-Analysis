@@ -82,3 +82,10 @@ baseline:
       f1_neutral: 0.1635
       f1_positive: 0.9009
     test_used: false
+  phobert:
+    learning_rate: 2e-5
+    batch_size: 32
+    num_epochs: 4
+    weight_decay: 0.01
+    warmup_ratio: 0.1
+    max_length: 64

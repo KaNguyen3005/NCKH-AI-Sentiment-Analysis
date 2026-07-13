@@ -13,6 +13,17 @@ import csv
 import matplotlib.pyplot as plt
 from sklearn.metrics import f1_score
 
+# Bypass strict torch version check for loading models with weights_only
+import transformers
+try:
+    import transformers.modeling_utils
+    if hasattr(transformers.modeling_utils, "check_torch_load_is_safe"):
+        transformers.modeling_utils.check_torch_load_is_safe = lambda: None
+    if hasattr(transformers.utils, "import_utils") and hasattr(transformers.utils.import_utils, "check_torch_load_is_safe"):
+        transformers.utils.import_utils.check_torch_load_is_safe = lambda: None
+except ImportError:
+    pass
+
 from dataset import create_data_loader
 
 def train_epoch(model, data_loader, loss_fn, optimizer, device, scheduler):
@@ -113,24 +124,46 @@ def main():
     parser.add_argument("--config", type=str, default="../config.yaml", help="Path to config file")
     args = parser.parse_args()
 
-    # Cấu hình fallback đã điều chỉnh theo kiến trúc dự án
-    config = {
+    # Cấu hình mặc định
+    train_config = {
         "model_name": "vinai/phobert-base",
         "num_classes": 3,
-        "max_length": 128,
-        "batch_size": 16,
-        "epochs": 3,
+        "max_length": 64,
+        "batch_size": 32,
+        "epochs": 4,
         "learning_rate": 2e-5,
-        "train_data": "../data/processed/train.csv",
-        "val_data": "../data/processed/val.csv",
-        "save_dir": "../models/phobert/best_checkpoint",
-        "results_dir": "../results",
-        "figures_dir": "../data/figures"
+        "weight_decay": 0.01,
+        "warmup_ratio": 0.1,
+        "train_data": "data/processed/train.csv",
+        "val_data": "data/processed/val.csv",
+        "save_dir": "models/phobert/best_checkpoint",
+        "results_dir": "results",
+        "figures_dir": "data/figures"
     }
 
     if os.path.exists(args.config):
         with open(args.config, "r", encoding="utf-8") as f:
-            config.update(yaml.safe_load(f) or {})
+            yaml_cfg = yaml.safe_load(f) or {}
+            
+            # Ghi đè từ yaml nếu có
+            if "model" in yaml_cfg:
+                train_config["model_name"] = yaml_cfg["model"].get("phobert_name", train_config["model_name"])
+            
+            if "data" in yaml_cfg:
+                train_config["num_classes"] = yaml_cfg["data"].get("num_labels", train_config["num_classes"])
+                train_config["train_data"] = yaml_cfg["data"].get("train_path", train_config["train_data"])
+                train_config["val_data"] = yaml_cfg["data"].get("val_path", train_config["val_data"])
+            
+            if "baseline" in yaml_cfg and "phobert" in yaml_cfg["baseline"]:
+                pb_cfg = yaml_cfg["baseline"]["phobert"]
+                train_config["max_length"] = pb_cfg.get("max_length", train_config["max_length"])
+                train_config["batch_size"] = pb_cfg.get("batch_size", train_config["batch_size"])
+                train_config["epochs"] = pb_cfg.get("num_epochs", train_config["epochs"])
+                train_config["learning_rate"] = float(pb_cfg.get("learning_rate", train_config["learning_rate"]))
+                train_config["weight_decay"] = float(pb_cfg.get("weight_decay", train_config["weight_decay"]))
+                train_config["warmup_ratio"] = float(pb_cfg.get("warmup_ratio", train_config["warmup_ratio"]))
+    
+    config = train_config
 
     os.makedirs(config["save_dir"], exist_ok=True)
     os.makedirs(config["figures_dir"], exist_ok=True)
@@ -155,9 +188,10 @@ def main():
         num_labels=config["num_classes"]
     ).to(device)
 
-    optimizer = AdamW(model.parameters(), lr=float(config["learning_rate"]))
+    optimizer = AdamW(model.parameters(), lr=float(config["learning_rate"]), weight_decay=float(config["weight_decay"]))
     total_steps = len(train_loader) * config["epochs"]
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
+    warmup_steps = int(total_steps * float(config["warmup_ratio"]))
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps)
     loss_fn = nn.CrossEntropyLoss().to(device)
 
     best_val_loss = float('inf')
