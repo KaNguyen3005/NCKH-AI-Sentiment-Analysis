@@ -122,7 +122,7 @@ def eval_model(model, data_loader, loss_fn, device):
     
     return acc.item(), avg_loss, f1_macro, f1_all
 
-def log_experiment(log_path, model_name, config_str, train_size, val_acc, val_f1_macro, f1_all, train_time_min, notes=""):
+def log_experiment(log_path, model_name, config_str, train_size, epoch, val_acc, val_f1_macro, f1_all, train_time_min, notes=""):
     """
     Ghi log lại thông số huấn luyện vào CSV theo chuẩn yêu cầu.
     """
@@ -133,7 +133,7 @@ def log_experiment(log_path, model_name, config_str, train_size, val_acc, val_f1
         writer = csv.writer(f)
         # Ghi header nếu file chưa tồn tại
         if not file_exists:
-            writer.writerow(['date', 'model', 'config', 'train_size', 'val_acc', 'val_f1_macro', 
+            writer.writerow(['date', 'model', 'config', 'train_size', 'epoch', 'val_acc', 'val_f1_macro', 
                              'val_f1_negative', 'val_f1_neutral', 'val_f1_positive', 'train_time_min', 'notes'])
         
         date_str = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -142,7 +142,7 @@ def log_experiment(log_path, model_name, config_str, train_size, val_acc, val_f1
         f1_pos = f1_all[2] if len(f1_all) > 2 else 0
         
         writer.writerow([
-            date_str, model_name, config_str, train_size, f"{val_acc:.4f}", f"{val_f1_macro:.4f}",
+            date_str, model_name, config_str, train_size, epoch, f"{val_acc:.4f}", f"{val_f1_macro:.4f}",
             f"{f1_neg:.4f}", f"{f1_neu:.4f}", f"{f1_pos:.4f}", f"{train_time_min:.1f}", notes
         ])
 
@@ -251,6 +251,7 @@ def main():
 
     best_val_loss = float('inf')
     best_val_metrics = None
+    best_epoch = "-"
     
     train_losses = []
     val_losses = []
@@ -273,6 +274,7 @@ def main():
         # Checkpointing
         if val_loss < best_val_loss:
             best_val_loss = val_loss
+            best_epoch = epoch + 1
             best_val_metrics = (val_acc, val_f1_macro, f1_all)
             model_save_path = os.path.join(config["save_dir"], f"best_model_{args.loss_type}_{args.head_type}.pt")
             torch.save(model.state_dict(), model_save_path)
@@ -298,7 +300,7 @@ def main():
     if best_val_metrics:
         val_acc, val_f1_macro, f1_all = best_val_metrics
         log_experiment(log_path, config["model_name"], config_str, len(df_train), 
-                       val_acc, val_f1_macro, f1_all, train_time_min, notes=f"loss_type={args.loss_type}, head_type={args.head_type}")
+                       best_epoch, val_acc, val_f1_macro, f1_all, train_time_min, notes=f"loss_type={args.loss_type}, head_type={args.head_type}")
         print(f"Logged experiment metrics to {log_path}")
 
 if __name__ == "__main__":
