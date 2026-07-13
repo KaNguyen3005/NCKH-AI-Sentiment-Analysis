@@ -24,7 +24,7 @@ class SentimentDataset(Dataset):
         label = self.labels[idx]
 
         # Tokenize văn bản, thêm các token đặc biệt, padding và cắt bớt (truncation)
-        encoding = self.tokenizer.encode_plus(
+        encoding = self.tokenizer(
             text,
             add_special_tokens=True,
             max_length=self.max_length,

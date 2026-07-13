@@ -1,0 +1,7 @@
+text,label,predicted_label,true_label
+phí tiền,0,1,0
+tệ,0,1,0
+rất hay tuyệt vời,1,0,1
+đỉnh cao,1,2,1
+cũng tàm tạm,2,0,2
+bình thường thôi,2,2,2
