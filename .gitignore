@@ -80,3 +80,17 @@ report/*.bbl
 report/*.blg
 
 # Bỏ qua folder figures nếu nó sinh ra quá nhiều ảnh rác, hoặc để lại nếu muốn lưu (hiện đang không ignore figures)
+
+# FastText gốc và cache có thể tái tạo, không đưa lên Git
+models/fasttext/*.vec
+models/fasttext/*.vec.gz
+models/fasttext/*.bin
+models/fasttext/*.npy
+models/fasttext/*.json
+
+# Không commit checkpoint debug và checkpoint từng lần tune
+models/baseline/*_debug_best.pt
+models/baseline/bilstm_ft_lr*_best.pt
+
+# Ngoại lệ cuối cùng: commit checkpoint chính thức
+!models/baseline/bilstm_best.pt
