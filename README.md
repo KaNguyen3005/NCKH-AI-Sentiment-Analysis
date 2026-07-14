@@ -90,3 +90,8 @@ streamlit run app/app.py
 Chi tiết về quá trình huấn luyện và đánh giá mô hình được lưu trữ ở thư mục `notebooks/`. Bạn có thể chạy tuần tự từ file `01_EDA.ipynb` (Phân tích dữ liệu thăm dò) cho đến file `07_llm_baseline.ipynb` (Đánh giá mô hình LLM).
 
 Kết quả từ các mô hình, bao gồm độ chính xác (Accuracy), F1-score và các kiểm định thống kê (McNemar test) được tự động lưu trữ và tổng hợp tại thư mục `results/`.
+
+## 📑 Báo cáo Thực nghiệm (Experiment Reports)
+
+- [Báo cáo Kỹ thuật Xử lý Imbalance Data (Focal Loss vs Class Weight)](docs/01_imbalance_report.md)
+- [Báo cáo So sánh Kiến trúc PhoBERT Head (CLS vs Mean-Pooling)](docs/02_head_architecture_report.md)
