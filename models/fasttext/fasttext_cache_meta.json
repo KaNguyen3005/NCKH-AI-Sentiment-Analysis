@@ -1,0 +1,14 @@
+{
+  "train_path": "data\\processed\\train.csv",
+  "text_col": "text_clean",
+  "fasttext_path": "models\\fasttext\\cc.vi.300.vec",
+  "vocab_size": 4145,
+  "embedding_dim": 300,
+  "max_vocab": 30000,
+  "min_freq": 1,
+  "fasttext_hits": 1538,
+  "oov_count": 2605,
+  "coverage": 0.37122857832488537,
+  "pad_idx": 0,
+  "unk_idx": 1
+}

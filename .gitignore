@@ -85,8 +85,15 @@ report/*.blg
 models/fasttext/*.vec
 models/fasttext/*.vec.gz
 models/fasttext/*.bin
+
+# Cache mặc định bị ignore
 models/fasttext/*.npy
 models/fasttext/*.json
+
+# Cho phép commit cache thu gọn dùng chung cho BiLSTM và GRU
+!models/fasttext/embedding_matrix.npy
+!models/fasttext/word2idx.json
+!models/fasttext/fasttext_cache_meta.json
 
 # Không commit checkpoint debug và checkpoint từng lần tune
 models/baseline/*_debug_best.pt
