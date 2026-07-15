@@ -101,3 +101,4 @@ models/baseline/bilstm_ft_lr*_best.pt
 
 # Ngoại lệ cuối cùng: commit checkpoint chính thức
 !models/baseline/bilstm_best.pt
+!models/baseline/gru_best.pt

@@ -1,10 +1,3 @@
-"""Train the BiLSTM sentiment classifier with the cached FastText vectors.
-
-This trainer uses only the pre-split training and validation CSV files. It
-loads the existing compact FastText cache and never rebuilds embeddings,
-downloads external data, or reads the test split.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -34,6 +27,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.models.bilstm import BiLSTM  # noqa: E402
+from src.models.gru import GRUClassifier  # noqa: E402
 from src.preprocessing import tokenize_for_ml_rnn  # noqa: E402
 
 
@@ -49,6 +43,10 @@ LABEL_COLUMN = "label_id"
 LABEL_IDS = (0, 1, 2)
 LABEL_MAPPING = {0: "Tiêu cực", 1: "Bình thường", 2: "Tích cực"}
 DEFAULT_FASTTEXT_COVERAGE = 0.3712
+MODEL_METADATA = {
+    "bilstm": ("BiLSTM", "BILSTM_FASTTEXT"),
+    "gru": ("GRU", "GRU_FASTTEXT"),
+}
 LOG_COLUMNS = [
     "date",
     "model",
@@ -133,7 +131,10 @@ def collate_batch(batch: Sequence[tuple[Tensor, Tensor]]) -> dict[str, Tensor]:
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Train a 3-class BiLSTM sentiment model with cached FastText vectors."
+        description=(
+            "Train a 3-class RNN (BiLSTM or GRU) sentiment model with cached "
+            "FastText vectors."
+        )
     )
     parser.add_argument(
         "--train-path",
@@ -178,9 +179,15 @@ def parse_args() -> argparse.Namespace:
         help="Experiment CSV path (default: %(default)s).",
     )
     parser.add_argument(
+        "--model-type",
+        choices=("bilstm", "gru"),
+        default="bilstm",
+        help="RNN architecture to train (default: %(default)s).",
+    )
+    parser.add_argument(
         "--run-name",
-        default="bilstm_ft_base",
-        help="Run identifier used in artifact names (default: %(default)s).",
+        default=None,
+        help="Run identifier used in artifact names (default: <model-type>_ft_base).",
     )
     parser.add_argument(
         "--max-length",
@@ -192,7 +199,7 @@ def parse_args() -> argparse.Namespace:
         "--hidden-dim",
         type=int,
         default=128,
-        help="LSTM hidden dimension (default: %(default)s).",
+        help="RNN hidden dimension for BiLSTM or GRU (default: %(default)s).",
     )
     parser.add_argument(
         "--dropout",
@@ -246,7 +253,10 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Use at most 500 train and 200 validation samples for one epoch.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.run_name is None:
+        args.run_name = f"{args.model_type}_ft_base"
+    return args
 
 
 def validate_args(args: argparse.Namespace) -> None:
@@ -407,8 +417,39 @@ def make_data_loader(
     )
 
 
+def build_model(
+    model_type: str,
+    *,
+    vocab_size: int,
+    hidden_dim: int,
+    dropout: float,
+    pretrained_embeddings: Tensor,
+    freeze_embeddings: bool,
+) -> nn.Module:
+    """Build a supported RNN classifier with the shared model configuration."""
+    if model_type == "bilstm":
+        model_class = BiLSTM
+    elif model_type == "gru":
+        model_class = GRUClassifier
+    else:
+        raise ValueError(f"Unsupported model type: {model_type}")
+
+    return model_class(
+        vocab_size=vocab_size,
+        embedding_dim=EMBEDDING_DIM,
+        hidden_dim=hidden_dim,
+        num_layers=NUM_LAYERS,
+        bidirectional=True,
+        dropout=dropout,
+        num_classes=NUM_CLASSES,
+        padding_idx=PAD_IDX,
+        pretrained_embeddings=pretrained_embeddings,
+        freeze_embeddings=freeze_embeddings,
+    )
+
+
 def train_one_epoch(
-    model: BiLSTM,
+    model: nn.Module,
     data_loader: DataLoader[tuple[Tensor, Tensor]],
     loss_fn: nn.CrossEntropyLoss,
     optimizer: Adam,
@@ -440,7 +481,7 @@ def train_one_epoch(
 
 
 def evaluate_model(
-    model: BiLSTM,
+    model: nn.Module,
     data_loader: DataLoader[tuple[Tensor, Tensor]],
     loss_fn: nn.CrossEntropyLoss,
     device: torch.device,
@@ -528,7 +569,7 @@ def load_fasttext_coverage(word2idx_path: Path) -> tuple[float, Path]:
 
 def save_checkpoint(
     path: Path,
-    model: BiLSTM,
+    model: nn.Module,
     optimizer: Adam,
     epoch: int,
     metrics: ValidationMetrics,
@@ -560,6 +601,7 @@ def save_learning_curve(
     val_losses: Sequence[float],
     path: Path,
     run_name: str,
+    model_display_name: str,
 ) -> None:
     """Save train and validation loss on one learning-curve figure."""
     import matplotlib
@@ -573,7 +615,7 @@ def save_learning_curve(
     plt.plot(epochs, val_losses, marker="o", label="Validation loss")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.title(f"BiLSTM + FastText learning curve: {run_name}")
+    plt.title(f"{model_display_name} + FastText learning curve: {run_name}")
     plt.legend()
     plt.grid(alpha=0.25)
     plt.tight_layout()
@@ -592,11 +634,13 @@ def append_experiment_log(
     train_time_min: float,
     early_stopped: bool,
     coverage: float,
+    experiment_name: str,
 ) -> None:
     """Append exactly one successful non-debug run to the experiment log."""
     class_weight_text = "/".join(f"{weight:.6f}" for weight in class_weights.tolist())
     config = (
-        f"run_name={args.run_name}, max_length={args.max_length}, "
+        f"run_name={args.run_name}, model_type={args.model_type}, "
+        f"max_length={args.max_length}, "
         f"hidden_dim={args.hidden_dim}, dropout={args.dropout}, "
         f"lr={args.learning_rate}, batch_size={args.batch_size}, "
         f"epochs={args.epochs}, class_weight=[{class_weight_text}], "
@@ -611,7 +655,7 @@ def append_experiment_log(
     row.update(
         {
             "date": datetime.now().strftime("%Y-%m-%d"),
-            "model": "BILSTM_FASTTEXT",
+            "model": experiment_name,
             "config": config,
             "train_size": train_size,
             "val_acc": f"{best_metrics.accuracy:.4f}",
@@ -636,11 +680,12 @@ def append_experiment_log(
 
 
 def main() -> None:
-    """Run BiLSTM/FastText training, checkpointing, plotting, and logging."""
+    """Run BiLSTM or GRU training with FastText, checkpointing, and logging."""
     args = parse_args()
     validate_args(args)
     set_seed(args.seed)
     device = resolve_device(args.device)
+    model_display_name, experiment_name = MODEL_METADATA[args.model_type]
 
     log_fieldnames = None if args.debug else get_log_fieldnames(args.log_path)
     word2idx, pretrained_embeddings = load_fasttext_cache(
@@ -685,6 +730,7 @@ def main() -> None:
     )
 
     model_config: dict[str, object] = {
+        "architecture": args.model_type,
         "vocab_size": len(word2idx),
         "embedding_dim": EMBEDDING_DIM,
         "hidden_dim": args.hidden_dim,
@@ -695,15 +741,11 @@ def main() -> None:
         "padding_idx": PAD_IDX,
         "freeze_embeddings": args.freeze_embeddings,
     }
-    model = BiLSTM(
+    model = build_model(
+        args.model_type,
         vocab_size=len(word2idx),
-        embedding_dim=EMBEDDING_DIM,
         hidden_dim=args.hidden_dim,
-        num_layers=NUM_LAYERS,
-        bidirectional=True,
         dropout=args.dropout,
-        num_classes=NUM_CLASSES,
-        padding_idx=PAD_IDX,
         pretrained_embeddings=pretrained_embeddings,
         freeze_embeddings=args.freeze_embeddings,
     ).to(device)
@@ -724,6 +766,7 @@ def main() -> None:
         "metadata": str(metadata_path),
     }
     training_config: dict[str, object] = {
+        "model_type": args.model_type,
         "train_path": str(args.train_path),
         "val_path": str(args.val_path),
         "run_name": args.run_name,
@@ -740,6 +783,7 @@ def main() -> None:
         "debug": args.debug,
     }
 
+    print(f"Model type: {args.model_type} ({model_display_name})")
     print(f"Device: {device}")
     print(f"Train samples: {len(train_dataset)}")
     print(f"Validation samples: {len(val_dataset)}")
@@ -806,7 +850,13 @@ def main() -> None:
     if best_metrics is None:
         raise RuntimeError("Training finished without producing validation metrics.")
 
-    save_learning_curve(train_losses, val_losses, figure_path, artifact_run_name)
+    save_learning_curve(
+        train_losses,
+        val_losses,
+        figure_path,
+        artifact_run_name,
+        model_display_name,
+    )
     if not args.debug:
         if log_fieldnames is None:
             raise RuntimeError("Experiment log header was not initialized.")
@@ -821,6 +871,7 @@ def main() -> None:
             train_time_min,
             early_stopped,
             coverage,
+            experiment_name,
         )
         print(f"Appended experiment log: {args.log_path}")
     else:
