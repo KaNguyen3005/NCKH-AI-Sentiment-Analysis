@@ -44,6 +44,7 @@ EMOTICON_REPLACEMENTS = {
     ":)": " emoticon_vui ",
     ":-)": " emoticon_vui ",
     ":d": " emoticon_vui ",
+    ":D": " emoticon_vui ",
     ":(": " emoticon_buon ",
     ":-(": " emoticon_buon ",
     ":@": " emoticon_tuc_gian ",
@@ -61,25 +62,30 @@ def normalize_emojis(text: str) -> str:
     for emoji, replacement in EMOJI_REPLACEMENTS.items():
         text = text.replace(emoji, replacement)
 
-    # Lowercasing is already done before this function, so :d covers :D.
+    # Both :d and :D are handled because cased PLM preprocessing
+    # intentionally preserves uppercase characters.
     for emoticon, replacement in EMOTICON_REPLACEMENTS.items():
         text = text.replace(emoticon, replacement)
 
     return text
 
 
-def clean_text(text: str) -> str:
+def clean_text(text: str, *, lowercase: bool = True) -> str:
     """
     Clean one Vietnamese text sample in the required fixed order.
 
     Order:
     1. Unicode NFC normalization
-    2. Lowercase
+    2. Lowercase when lowercase=True
     3. Remove URLs and e-mails
     4. Remove HTML tags and unescape HTML entities
     5. Normalize emojis/emoticons
     6. Normalize whitespace
     7. Do not remove punctuation completely
+
+    The default lowercase=True preserves the existing ML/RNN pipeline.
+    Use lowercase=False for cased pretrained language models such as
+    bert-base-multilingual-cased.
     """
     if text is None:
         return ""
@@ -87,8 +93,10 @@ def clean_text(text: str) -> str:
     # 1. Unicode NFC normalization
     text = normalize_unicode(str(text))
 
-    # 2. Lowercase
-    text = text.lower()
+    # 2. Lowercase when requested.
+    # The default remains True to preserve the completed ML/RNN pipelines.
+    if lowercase:
+        text = text.lower()
 
     # 3. Remove URLs and e-mails
     text = URL_PATTERN.sub(" ", text)
@@ -136,6 +144,18 @@ def prepare_for_plm(text: str) -> str:
     """
     return clean_text(text)
 
+def prepare_for_mbert(text: str) -> str:
+    """
+    Prepare raw text for bert-base-multilingual-cased.
+
+    The text is cleaned without lowercasing so the cased tokenizer can
+    preserve distinctions such as "AI" versus "ai".
+
+    Do not apply underthesea word segmentation. The mBERT tokenizer
+    performs its own subword tokenization.
+    """
+    return clean_text(text, lowercase=False)
+
 
 def batch_clean_texts(texts: Iterable[str]) -> List[str]:
     """Clean multiple text samples."""
@@ -157,6 +177,28 @@ if __name__ == "__main__":
     print("\n== prepare_for_plm ==")
     for t in test_cases:
         print(f"{t!r} -> {prepare_for_plm(t)!r}")
+
+    print("\n== prepare_for_mbert ==")
+    for t in test_cases:
+        print(f"{t!r} -> {prepare_for_mbert(t)!r}")
+
+    # Regression checks: the completed ML/RNN behavior must not change.
+    assert clean_text("SẢN PHẨM tốt&nbsp;quá!!! Recommend luôn") == (
+        "sản phẩm tốt quá!!! recommend luôn"
+    )
+
+    # mBERT must preserve uppercase/lowercase information.
+    assert prepare_for_mbert(
+        "SẢN PHẨM tốt&nbsp;quá!!! Recommend luôn"
+    ) == "SẢN PHẨM tốt quá!!! Recommend luôn"
+
+    assert prepare_for_mbert("AI hỗ trợ tôi") == "AI hỗ trợ tôi"
+    assert prepare_for_mbert("AI vui :D") == "AI vui emoticon_vui"
+    assert "http" not in prepare_for_mbert(
+        "AI tốt http://example.com"
+    )
+
+    print("\nPreprocessing assertions: OK")
 
     print("\n== tokenize_for_ml_rnn ==")
     try:

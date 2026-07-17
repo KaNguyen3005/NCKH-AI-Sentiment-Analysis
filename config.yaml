@@ -49,18 +49,20 @@ training:
     validation: 0.15
     test: 0.15
   random_seeds:
-  - 42
-  - 2024
-  - 2026
+    - 42
+    - 2024
+    - 2026
   use_class_weight: true
   use_focal_loss: true
   primary_seed: 42
   stratify_by: label_id
   test_set_locked: true
 notes:
-  max_length_explanation: Percentile 95 theo số từ là 34. Vì PhoBERT/mBERT dùng subword
+  max_length_explanation:
+    Percentile 95 theo số từ là 34. Vì PhoBERT/mBERT dùng subword
     tokenizer, chọn model.max_length = 64.
-  task_06_07: Gộp khảo sát chính và UIT-VSFC về cùng format 3 nhãn, tạo merged.csv
+  task_06_07:
+    Gộp khảo sát chính và UIT-VSFC về cùng format 3 nhãn, tạo merged.csv
     và chốt max_length vào config.yaml.
 baseline:
   nb_tfidf:
@@ -70,8 +72,8 @@ baseline:
       type: TfidfVectorizer
       max_features: 20000
       ngram_range:
-      - 1
-      - 2
+        - 1
+        - 2
     classifier:
       type: MultinomialNB
       alpha: 1.0
@@ -82,6 +84,22 @@ baseline:
       f1_neutral: 0.1635
       f1_positive: 0.9009
     test_used: false
+  mbert:
+    model_name: bert-base-multilingual-cased
+    learning_rate: 2.0e-5
+    batch_size: 16
+    epochs: 4
+    patience: 2
+    weight_decay: 0.01
+    warmup_ratio: 0.1
+    max_grad_norm: 1.0
+    max_length: 64
+    dropout: 0.1
+    head_type: cls
+    loss_type: class_weight
+    seed: 42
+    selection_metric: val_f1_macro
+    save_dir: models/baseline/mbert_finetuned
   phobert:
     learning_rate: 2e-5
     batch_size: 32

@@ -15,6 +15,7 @@ statsmodels       # McNemar test (Task Đánh giá Tuần 3)
 # ==========================================
 torch             # Framework chính cho BiLSTM, GRU, PhoBERT
 transformers      # Load vinai/phobert-base và mBERT từ HuggingFace
+safetensors       # Lưu trọng số PLM ở định dạng an toàn
 underthesea       # Tiền xử lý, tách từ tiếng Việt chuẩn (Task Tuần 1)
 fasttext-wheel    # Xây dựng embedding layer cho BiLSTM/GRU (dùng bản wheel để tránh lỗi build C++)
 
@@ -38,3 +39,4 @@ streamlit         # Xây dựng Web App Demo (Task Tuần 4)
 optuna            # Hyperparameter tuning (lr, batch, epoch cho PhoBERT)
 tqdm              # Hiển thị thanh tiến trình (rất cần khi code vòng lặp train/test hoặc LLM)
 notebook          # Môi trường chạy các file .ipynb (01_EDA.ipynb -> 07_llm_baseline.ipynb)
+PyYAML            # Đọc cấu hình config.yaml
