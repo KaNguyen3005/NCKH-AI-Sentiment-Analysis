@@ -65,6 +65,7 @@ models/phobert/*
 
 # Không push kết quả dự đoán rác, log (có thể giữ lại các file tổng hợp nhỏ nếu muốn)
 results/*
+!results/mbert_best_meta.json
 !results/experiments_log.csv
 !results/.gitkeep
 

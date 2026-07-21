@@ -1,0 +1,39 @@
+{
+  "task": "B5 — Fine-tune mBERT",
+  "status": "completed",
+  "official_artifact": "mbert_finetuned",
+  "source_run": "mbert_lr2e5_bs16",
+  "model_name": "bert-base-multilingual-cased",
+  "selection_metric": "validation_macro_f1",
+  "best_epoch": 4,
+  "validation_metrics": {
+    "accuracy": 0.9236,
+    "f1_macro": 0.8357,
+    "f1_negative": 0.9428,
+    "f1_neutral": 0.6233,
+    "f1_positive": 0.9411
+  },
+  "hyperparameters": {
+    "learning_rate": 2e-05,
+    "batch_size": 16,
+    "max_length": 64,
+    "dropout": 0.1,
+    "epochs": 4,
+    "patience": 2,
+    "seed": 42,
+    "head_type": "cls",
+    "loss_type": "class_weight"
+  },
+  "checkpoint_size_bytes": 711447084,
+  "checkpoint_sha256": "178cf011618069c102699e0507960008a52b948e4081918827ab27435a8f4852",
+  "learning_curve_sha256": "9982a7d9df30c54dbb5c4b8da156e43c50d9476129904ec22ee3e0062da2ee27",
+  "experiment_log_sha256": "ffe2a488190739fa37dea4501daad61f27fd3e8fef370954052845caa8a43462",
+  "training_environment": {
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.14.1",
+    "numpy": "2.0.2",
+    "pandas": "2.2.2"
+  },
+  "test_used": false
+}
