@@ -30,7 +30,7 @@ wordcloud         # Hiển thị top từ khóa mỗi nhãn (Câu hỏi 4 - EDA)
 # 5. LLM API (Đối chứng Zero-shot/Few-shot)
 # ==========================================
 openai            # API gọi mô hình GPT 
-google-generativeai # API gọi mô hình Gemini (dự phòng)
+google-genai       # SDK Gemini chính thức hiện hành
 
 # ==========================================
 # 6. Tuning, App & Utilities
@@ -40,3 +40,4 @@ optuna            # Hyperparameter tuning (lr, batch, epoch cho PhoBERT)
 tqdm              # Hiển thị thanh tiến trình (rất cần khi code vòng lặp train/test hoặc LLM)
 notebook          # Môi trường chạy các file .ipynb (01_EDA.ipynb -> 07_llm_baseline.ipynb)
 PyYAML            # Đọc cấu hình config.yaml
+python-dotenv       # Đọc API key từ file .env cục bộ

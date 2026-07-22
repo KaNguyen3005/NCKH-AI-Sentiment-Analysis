@@ -106,3 +106,9 @@ models/baseline/bilstm_ft_lr*_best.pt
 
 # PLM debug artifacts
 data/figures/*_debug_learning_curve.png
+# =========================
+# Secrets / API credentials
+# =========================
+.env
+.env.*
+!.env.example
